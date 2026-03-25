@@ -5621,12 +5621,53 @@ const AdminDashboard = ({
 };
 
 export default function App() {
+  const [startupError, setStartupError] = useState<string | null>(null);
+  const [startupDebug, setStartupDebug] = useState<string[]>([]);
   const [mode, setMode] = useState<'kiosk' | 'admin' | 'select'>('select');
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [sessionTimeout, setSessionTimeout] = useState(180); // Default 3 minutes
   const [billingVoiceRate, setBillingVoiceRate] = useState(0.10);
   const [billingTextRate, setBillingTextRate] = useState(0.02);
+
+  useEffect(() => {
+    const isNonFatalError = (msg: string) => {
+      const lowerMsg = msg.toLowerCase();
+      return (
+        lowerMsg.includes("websocket closed without opened") ||
+        lowerMsg.includes("realtime connection failure") ||
+        lowerMsg.includes("voice session connection failure") ||
+        lowerMsg.includes("failed to connect live") ||
+        (lowerMsg.includes("websocket") && (lowerMsg.includes("close") || lowerMsg.includes("fail") || lowerMsg.includes("error"))) ||
+        (lowerMsg.includes("realtime") && (lowerMsg.includes("connection") || lowerMsg.includes("fail")))
+      );
+    };
+
+    const handleError = (event: ErrorEvent) => {
+      const msg = `[window.error] ${event.message}\n${event.error?.stack || ''}`;
+      setStartupDebug(prev => [...prev, msg]);
+      if (!isNonFatalError(msg)) {
+        setStartupError(prev => prev || msg);
+      } else {
+        console.warn("Downgraded non-fatal startup error:", msg);
+      }
+    };
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      const msg = `[unhandledrejection] ${event.reason}`;
+      setStartupDebug(prev => [...prev, msg]);
+      if (!isNonFatalError(msg)) {
+        setStartupError(prev => prev || msg);
+      } else {
+        console.warn("Downgraded non-fatal startup rejection:", msg);
+      }
+    };
+    window.addEventListener('error', handleError);
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => {
+      window.removeEventListener('error', handleError);
+      window.removeEventListener('unhandledrejection', handleRejection);
+    };
+  }, []);
 
   // Check for summary page
   const path = window.location.pathname;
@@ -5646,13 +5687,62 @@ export default function App() {
   }
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/projects`).then(res => res.json()).then(setProjects);
-    fetch(`${API_BASE}/api/settings`).then(res => res.json()).then(settings => {
-      if (settings.session_timeout) setSessionTimeout(parseInt(settings.session_timeout));
-      if (settings.billing_voice_rate_per_minute) setBillingVoiceRate(parseFloat(settings.billing_voice_rate_per_minute));
-      if (settings.billing_text_rate_per_1000_chars) setBillingTextRate(parseFloat(settings.billing_text_rate_per_1000_chars));
-    });
+    const loadStartupData = async () => {
+      try {
+        const projectsRes = await fetch(`${API_BASE}/api/projects`);
+        if (!projectsRes.ok) {
+          const text = await projectsRes.text();
+          throw new Error(`HTTP ${projectsRes.status}: ${text}`);
+        }
+        const projectsData = await projectsRes.json();
+        setProjects(projectsData);
+      } catch (e: any) {
+        const msg = `Startup warning: Failed to load projects: ${e.message}. Using empty list.`;
+        setStartupDebug(prev => [...prev, msg]);
+        console.warn("Restricted environment detected - using safe fallback defaults");
+      }
+
+      try {
+        const settingsRes = await fetch(`${API_BASE}/api/settings`);
+        if (!settingsRes.ok) {
+          const text = await settingsRes.text();
+          throw new Error(`HTTP ${settingsRes.status}: ${text}`);
+        }
+        const settings = await settingsRes.json();
+        if (settings.session_timeout) setSessionTimeout(parseInt(settings.session_timeout));
+        if (settings.billing_voice_rate_per_minute) setBillingVoiceRate(parseFloat(settings.billing_voice_rate_per_minute));
+        if (settings.billing_text_rate_per_1000_chars) setBillingTextRate(parseFloat(settings.billing_text_rate_per_1000_chars));
+      } catch (e: any) {
+        const msg = `Startup warning: Failed to load settings: ${e.message}. Using safe defaults (Timeout: 180s, Voice: 0.10, Text: 0.02).`;
+        setStartupDebug(prev => [...prev, msg]);
+        console.warn("Restricted environment detected - using safe fallback defaults");
+      }
+    };
+    loadStartupData();
   }, []);
+
+  if (startupError) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-slate-950 text-white p-8 overflow-y-auto font-mono">
+        <h1 className="text-pink-500 text-2xl font-bold mb-6">Application failed to start</h1>
+        <div className="bg-white/5 border border-white/10 p-6 rounded-xl mb-8">
+          <p className="text-pink-400 font-bold mb-2">Primary Error:</p>
+          <pre className="whitespace-pre-wrap text-sm">{startupError}</pre>
+        </div>
+        <div className="space-y-4">
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Diagnostic Logs:</p>
+          {startupDebug.map((log, i) => (
+            <div key={i} className="bg-white/5 p-4 rounded-lg border border-white/5 text-xs text-slate-300 whitespace-pre-wrap">
+              {log}
+            </div>
+          ))}
+        </div>
+        <div className="mt-8 pt-8 border-t border-white/10 text-[10px] text-slate-500">
+          URL: {window.location.href}
+        </div>
+      </div>
+    );
+  }
 
   if (mode === 'select') {
     return (
