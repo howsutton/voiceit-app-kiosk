@@ -1,0 +1,129 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  /* Conversational Canvas Colors (Dark Mode Adaptation) */
+  --color-surface: #05070A;
+  --color-surface-low: #0D121C;
+  --color-surface-container: #161E2E;
+  --color-surface-highest: #1E2E51;
+  
+  --color-primary: #5aa0fa;
+  --color-primary-container: #5aa0fa;
+  --color-on-surface: #EEF0FF;
+  --color-outline-variant: rgba(158, 172, 215, 0.15);
+  --color-tertiary: #823E9B;
+  
+  /* Override standard Tailwind colors for consistency */
+  --color-indigo-600: #5aa0fa;
+  --color-indigo-700: #4a90ea;
+  --color-blue-600: #5aa0fa;
+  --color-blue-700: #4a90ea;
+  
+  /* App Specific Mappings */
+  --color-app-bg: var(--color-surface);
+  --color-app-surface: var(--color-surface-low);
+  --color-app-accent: var(--color-primary-container);
+  --color-app-accent-glow: rgba(90, 162, 255, 0.3);
+  --color-app-muted: #9EACD7;
+  --color-app-danger: #EF4444;
+  --color-app-warning: var(--color-tertiary);
+}
+
+body {
+  @apply font-body antialiased bg-app-bg text-on-surface;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(0, 92, 170, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 0% 0%, rgba(0, 92, 170, 0.05) 0%, transparent 30%),
+    radial-gradient(circle at 100% 100%, rgba(130, 62, 155, 0.05) 0%, transparent 30%);
+}
+
+/* Dotted Background Pattern */
+.bg-dots {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  @apply bg-surface-low/70 backdrop-blur-xl border border-outline-variant shadow-2xl;
+}
+
+.glass-card {
+  @apply bg-surface-container/40 backdrop-blur-md border border-outline-variant shadow-lg;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
+}
+
+@keyframes orb-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; filter: blur(40px); }
+  50% { transform: scale(1.1); opacity: 0.9; filter: blur(60px); }
+}
+
+@keyframes orb-inner-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-orb-pulse {
+  animation: orb-pulse 6s ease-in-out infinite;
+}
+
+.animate-orb-inner-pulse {
+  animation: orb-inner-pulse 4s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+/* Device Frame for Desktop */
+.app-container {
+  @apply relative w-full h-screen flex items-center justify-center bg-app-bg overflow-hidden;
+}
+
+.device-frame {
+  @apply relative w-full h-full max-w-[480px] max-h-[900px] md:h-[90%] md:rounded-[40px] md:border-[8px] md:border-slate-800/50 md:shadow-[0_0_80px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col bg-app-bg transition-all duration-700;
+}
+
+.device-frame.is-voice {
+  @apply max-w-none max-h-none h-full rounded-none border-0 shadow-none md:h-full md:rounded-none md:border-0;
+}
+
+/* Enhanced Background Bloom */
+.bg-bloom {
+  background: radial-gradient(circle at 50% 50%, #1a2a4a 0%, #0a0f1d 70%, #05070a 100%);
+}
+
+.bg-bloom-intense {
+  background: radial-gradient(circle at 50% 50%, #2a3a6a 0%, #0a1530 60%, #050a15 100%);
+}
+
+/* Pill Button Style */
+.btn-pill {
+  @apply px-6 py-2.5 rounded-full bg-white/5 backdrop-blur-md border border-white/10 text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 hover:border-white/20 transition-all active:scale-95;
+}
+
+.btn-pill-accent {
+  @apply px-6 py-2.5 rounded-full bg-app-accent/10 backdrop-blur-md border border-app-accent/30 text-sm font-bold text-app-accent hover:bg-app-accent/20 transition-all active:scale-95 shadow-[0_0_20px_rgba(59,130,246,0.1)];
+}
+
